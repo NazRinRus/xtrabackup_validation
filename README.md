@@ -1,1 +1,0 @@
-# xtrabackup_validation
