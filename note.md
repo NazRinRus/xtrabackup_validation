@@ -1,4 +1,9 @@
 ## Заметки по ходу разработки
+### Рабочая директория
+```
+mkdir -p ~/projects/xtrabackup_validation
+cd ~/projects/xtrabackup_validation
+```
 ### Виртуальное окружение
 Создание окружения:
 ```
