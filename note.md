@@ -28,3 +28,7 @@ git branch -M main
 git remote add origin git@github.com:NazRinRus/xtrabackup_validation.git
 git push -u origin main
 ```
+### Текущие задачи
+1. Перед написанием класса, протестировать функции
+2. Написать метод остановки и запуска кластера
+3. Переписать функции на методы

@@ -1,6 +1,7 @@
 import subprocess
 import shlex
 import os
+import time
 from pathlib import Path
 from mysqlconf import BACKUP_DIR, MYSQL_DATA_DIR
 
@@ -116,14 +117,159 @@ def xtrabackup_restore(data_dir, username = 'mysql'):
         print(f"Restore failed: {e}")
         return False
 
-class MySQL_backup:
-    
+class MySQL_cluster:
+    """
+    Класс, описывающий свойства и методы кластера MySQL
+    """
     mysql_data_dir = MYSQL_DATA_DIR
     backupdir = BACKUP_DIR
+    username = 'mysql'
 
     def __init__(self, cluster_name):
         self.cluster_name = cluster_name
     
-    def restore_backup(self):
-        pass
+    def stop_cluster(self):
+        """
+        Метод остановки кластера
+        """
+        try:
+            result_cmd = subprocess.run(
+                ["sudo", "systemctl", "stop", "mysql"],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            time.sleep(2)
+            if result_cmd.returncode == 0:
+                print(f"Service mysql stop successful")
+                return True
+            else:
+                print(f"Service mysql stop failed: {result_cmd.stderr}")
+                return False
+            
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
+    
+    def start_cluster(self):
+        """
+        Метод запуска кластера
+        """
+        try:
+            result_cmd = subprocess.run(
+                ["sudo", "systemctl", "start", "mysql"],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            time.sleep(2)
+            if result_cmd.returncode == 0:
+                print(f"Service mysql start successful")
+                return True
+            else:
+                print(f"Service mysql start failed: {result_cmd.stderr}")
+                return False
+            
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
 
+    def clear_data_dir(self, mysql_data_dir, username):
+        """
+        Метод очистки директории с данными
+        """
+        try:
+            # Проверка существования директории
+            if not os.path.exists(mysql_data_dir):
+                raise FileNotFoundError(f"Directory {mysql_data_dir} does not exist")
+        
+            if not os.path.isdir(mysql_data_dir):
+                raise NotADirectoryError(f"{mysql_data_dir} is not a directory")
+        
+            # Проверка опасных путей (защита от удаления системных папок)
+            dangerous_paths = ['/home', '/etc', '/var', '/usr', '/bin', '/sbin']
+            if any(mysql_data_dir.startswith(path) for path in dangerous_paths if len(path) > 1) or (mysql_data_dir == '/'):
+                raise PermissionError(f"Cannot clear system directory: {mysql_data_dir}")
+        
+            # Удаление содержимого через rm -rf (только содержимое, не саму папку)
+            command = f"rm -rf {shlex.quote(mysql_data_dir)}/* {shlex.quote(mysql_data_dir)}/.* 2>/dev/null || true"
+            result = subprocess.run(
+                ["sudo", "-u", username, "bash", "-c", command],
+                capture_output=True,
+                text=True,
+                timeout=120
+            )
+            if result.returncode == 0:
+                print(f"Successfully cleared {mysql_data_dir} as {username}")
+                return True
+            else:
+                print(f"Warning: Some files may not have been deleted: {result.stderr}")
+                return True  # Частичный успех 
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
+
+    def copy_backup_in_datadir(self, backupdir, mysql_data_dir, username = 'mysql'):
+        """
+        Метод копирования файлов бэкапа в директорию данных
+        """
+        try:
+            copy_cmd = f"cp -Rp {shlex.quote(backupdir)}/{self.cluster_name}/latest/. {shlex.quote(mysql_data_dir)}/"
+            subprocess.run(["sudo", "bash", "-c", copy_cmd], check=True)
+            chown_cmd = f"chown -R {username}:{username} {shlex.quote(mysql_data_dir)}"
+            subprocess.run(["sudo", "bash", "-c", chown_cmd], check=True)
+            print("Copy completed successfully")
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"Copy failed: {e}")
+            return False
+
+    @staticmethod
+    def extract_uuid_smth(mysql_data_dir):
+        """
+        Метод извлечения значений uuid, smth из файла xtrabackup_galera_info. 
+        """
+        file_path = mysql_data_dir + '/xtrabackup_galera_info'
+        try:
+            with open(file_path, 'r') as xtrabackup_galera_info:
+                content = xtrabackup_galera_info.read().strip()
+            uuid = content.split(':')[0]
+            smth = content.split(':')[-1]
+        except FileNotFoundError:
+            print(f"File {file_path} not found")
+            return False
+        except Exception as e:
+            print(f"Error reading file: {e}")
+            return False
+        file_path = mysql_data_dir + '/grastate.dat'
+        content = f"# GALERA saved state\nversion: 2.1\nuuid: {uuid}\nseqno: -1\nsafe_to_bootstrap: 1"
+        try:
+            with open(file_path, 'w') as grastate:
+                grastate.write(content)
+        except Exception as e:
+            print(f"Error reading file: {e}")
+            return False
+
+    def xtrabackup_restore(self, mysql_data_dir, username = 'mysql'):
+        """
+        Метод восстановления директории данных (файлы из бэкапа уже скопированы)
+        """
+        try:
+            nproc = subprocess.run(
+                ["bash", "-c", "nproc"], 
+                check=True, 
+                capture_output=True, 
+                text=True
+                ).stdout.strip()
+            decompress_cmd = f"xtrabackup --parallel={nproc} --decompress --remove-original --target-dir={shlex.quote(mysql_data_dir)}"
+            subprocess.run(["sudo", "-u", username, "bash", "-c", decompress_cmd], check=True)
+            restore_cmd = f"xtrabackup --prepare --rebuild-threads={nproc} --target-dir={shlex.quote(mysql_data_dir)}"
+            subprocess.run(["sudo", "-u", username, "bash", "-c", restore_cmd], check=True)
+            self.extract_uuid_smth(mysql_data_dir)
+            chown_cmd = f"chown -R {username}:{username} {shlex.quote(mysql_data_dir)}"
+            subprocess.run(["sudo", "bash", "-c", chown_cmd], check=True)
+            print("Restore completed successfully")
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"Restore failed: {e}")
+            return False
