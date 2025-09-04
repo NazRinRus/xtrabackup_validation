@@ -49,6 +49,18 @@ True
 >>> crm_prod.start_cluster()
 Service mysql start successful
 True
+>>> crm_prod.clear_data_dir()
+Successfully cleared /data/mysql as mysql
+True
+>>> crm_prod.copy_backup_in_datadir()
+Copy completed successfully
+True
+>>> crm_prod.xtrabackup_restore()
+Restore completed successfully
+True
+>>> crm_prod.start_cluster()
+Service mysql start successful
+True
 ```
 Протестировать следующее:
 
@@ -69,3 +81,4 @@ def clear_data_dir():
 Successfully cleared /data/mysql as mysql
 True
 ```
+**Атрибуты и методы класса внедрены и протестированы, отдельные функции вне класса можно удалять**
