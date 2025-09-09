@@ -4,64 +4,6 @@ import os
 import time
 from mysqlconf import BACKUP_DIR, MYSQL_DATA_DIR
 
-CONFIG_FILE = './validation.conf'
-
-# Класс обрабатывающий файл конфигурации
-class Configuration:
-    """
-    Класс, парсящий, валидирующий и хранящий конфигурацию скрипта
-    """
-    config_file = CONFIG_FILE
-
-    @classmethod
-    def dir_validate(cls, path_dir):
-        """ Метод проверки существования директории """
-        if not os.path.exists(path_dir):
-            raise FileNotFoundError(f"Directory {path_dir} does not exist")
-        if not os.path.isdir(path_dir):
-            raise NotADirectoryError(f"{path_dir} is not a directory") 
-        return True
-    
-    @classmethod
-    def file_validate(cls, file_path):
-        """ Метод проверки существования файла """
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"File {file_path} not found")
-        return True
-
-    @classmethod
-    def parsing_configuration(cls, conf_file_path = './validation.conf'):
-        """ Метод парсящий файл конфигурации и сохранящий значения в словарь """
-        config_dict = {}
-        if cls.file_validate(conf_file_path):
-            with open(conf_file_path, 'r', encoding='utf-8') as config_file:
-                for line in config_file:
-                    line = line.strip()
-                    if not line or line.startswith('#'):
-                        continue
-                    if '=' in line:
-                        key, value = line.split('=', 1)
-                        config_dict[key.strip()] = value.strip()
-        return config_dict
-
-    @classmethod
-    def validation_configuration(cls, config_dict):
-        if 'MYSQL_DATA_DIR' in config_dict:
-            cls.dir_validate(config_dict['MYSQL_DATA_DIR'])
-        else:
-            raise NotADirectoryError(f"Missing parameter 'MYSQL_DATA_DIR' in configuration file")
-        if 'BACKUP_DIR' in config_dict:
-            cls.dir_validate(config_dict['BACKUP_DIR'])
-        else:
-            raise NotADirectoryError(f"Missing parameter 'BACKUP_DIR' in configuration file")
-        return True
-
-    @classmethod
-    def get_configuration(cls):
-        config_dict = cls.parsing_configuration()
-        if cls.validation_configuration(config_dict):
-            return config_dict
-
 # Классы описывающие калстера
 class MySQL_cluster:
     """
@@ -184,7 +126,7 @@ class MySQL_cluster:
         command = "mysql --execute='SHOW DATABASES;' --skip-column-names --batch --silent"
         show_databases_cmd = subprocess.run(["sudo", "bash", "-c", command], capture_output=True, text=True, timeout=2)
         databases = [db for db in show_databases_cmd.stdout.strip().split('\n') if db not in exclude_db]
-        return databases.sort()
+        return sorted(databases)
 
     def __new__(cls, *args, **kwargs):
         cls.dir_validate(cls.backupdir + '/' + args[0])
@@ -239,4 +181,31 @@ class MySQL_cluster:
             for entry in entries:
                 if entry.is_dir() and entry.name not in exclude_dirs:
                     directories.append(entry.name)
-        return directories.sort()
+        return sorted(directories)
+
+    def start_dump(self, dump_cmd):
+        """ Метод создания дампа"""
+        dump_result = subprocess.run(["sudo", "bash", "-c", dump_cmd],
+            stdout=subprocess.DEVNULL,
+            timeout=300  # 5 минут таймаут на таблицу
+        )
+        if dump_result.returncode != 0:
+            raise subprocess.CalledProcessError(f"Dump error: {dump_result.stderr}")
+        return True
+
+    def dump_validation(self):
+        """ 
+        Метод снятия дампа, если активный кластер развернут из бэкапа текущего экземпляра класса.
+        Соответствие кластера проверяется сравнением названий баз данных в активном класстере с кластером экземпляра  
+        """
+        active_cluster = self.get_active_databases()
+        backup_cluster = self.get_databases_in_backup()
+        if active_cluster != backup_cluster:
+            raise Exception(f"The active cluster is different from the instance cluster - {self.cluster_name}")
+        else:
+            for db in active_cluster:
+                dump_cmd = f"mysqldump --single-transaction --events --triggers {db} > /dev/null"
+                self.start_dump(dump_cmd)
+        return True
+
+

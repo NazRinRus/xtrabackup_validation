@@ -69,12 +69,81 @@ except ValueError as e:
 ```
 2. Есть ли смысл в текстовом конфигурационном файле, удобнее держать переменные в файле `.py` и импортировать.
 3. 
-- def status_cluster(): возвращает True если активен сервис и False если не активен
+- def status_cluster(): возвращает True если активен сервис и False если не активен;
+- выполнено сравнение активного класстера с кластером текущего экземпляра бэкапа, чтобы узнать он сейчас активен или нет;
+- в python разработать метод асинхронного снятия дампа, для ускорения процесса, каждую таблицу в отдельном процессе:
+1. Есть список таблиц table_list
+2. Цикл: for table in table_list:
+3. Формирование команды дампа в цикле: dump_cmd = f"mysqldump --single-transaction --events --triggers db_name {table} > /dev/null"
+4. Запустить команду dump_cmd в цикле в асинхронном режиме
+5. Информация о выполнении команды не нужна, только результат
+6. Дождаться выполнения всех процессов
+```
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
+import subprocess
+import time
 
+def dump_table_sync(table, db_name):
+    """Синхронное создание дампа одной таблицы"""
+    dump_cmd = [
+        'mysqldump',
+        '--single-transaction',
+        '--events',
+        '--triggers',
+        db_name,
+        table
+    ]
+    
+    try:
+        result = subprocess.run(
+            dump_cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=300  # 5 минут таймаут на таблицу
+        )
+        return {'table': table, 'success': result.returncode == 0, 'error': None}
+    except subprocess.TimeoutExpired:
+        return {'table': table, 'success': False, 'error': 'Timeout'}
+    except Exception as e:
+        return {'table': table, 'success': False, 'error': str(e)}
 
+async def parallel_dump_tables(table_list, db_name, max_workers=None):
+    """Параллельный дамп таблиц с использованием ProcessPoolExecutor"""
+    if max_workers is None:
+        max_workers = min(len(table_list), 8)  # Максимум 8 процессов
+    
+    loop = asyncio.get_event_loop()
+    
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        # Создаем задачи
+        tasks = [
+            loop.run_in_executor(executor, dump_table_sync, table, db_name)
+            for table in table_list
+        ]
+        
+        # Ждем завершения всех задач
+        results = await asyncio.gather(*tasks)
+    
+    return results
 
-command = "mysql --execute='SHOW DATABASES;' --skip-column-names --batch --silent"
-show_databases_cmd = subprocess.run(["sudo", "bash", "-c", command], capture_output=True, text=True, timeout=2)
-show_databases_cmd.stdout
-OUT:
-'information_schema\ncrm_prod\nmysql\nperformance_schema\npxc_sst_DJtA\npxc_sst_Zxbd\npxc_sst_dM67\npxc_sst_m5I4\npxc_sst_taA6\nsys\n'
+# Пример использования
+async def main_parallel():
+    db_name = "your_database"
+    table_list = ["table1", "table2", "table3", "table4", "table5"]
+    
+    print(f"Начинаем параллельный дамп {len(table_list)} таблиц...")
+    start_time = time.time()
+    
+    results = await parallel_dump_tables(table_list, db_name, max_workers=4)
+    
+    end_time = time.time()
+    
+    successful = sum(1 for r in results if r['success'])
+    failed = sum(1 for r in results if not r['success'])
+    
+    print(f"Завершено за {end_time - start_time:.2f} секунд")
+    print(f"Успешно: {successful}, Неудачно: {failed}")
+
+# asyncio.run(main_parallel())
+```
