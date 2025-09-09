@@ -101,6 +101,21 @@ class MySQL_cluster:
         return True
     
     @staticmethod
+    def status_cluster():
+        """ Метод остановки кластера """
+        result_cmd = subprocess.run(
+            ["sudo", "systemctl", "is-active", "mysql"],
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+        time.sleep(2)
+        if result_cmd.returncode != 0:
+            raise subprocess.CalledProcessError(f"Error getting service status: {result_cmd.stderr}")
+        else:
+            return True if result_cmd.stdout.strip() == 'active' else False
+
+    @staticmethod
     def stop_cluster():
         """ Метод остановки кластера """
         result_cmd = subprocess.run(
@@ -133,9 +148,7 @@ class MySQL_cluster:
     @classmethod
     def clear_data_dir(cls):
         """ Метод очистки директории с данными """
-        # Проверка существования директории
         if cls.dir_validate(cls.mysql_data_dir):
-            # Удаление содержимого через rm -rf (только содержимое, не саму папку)
             command = f"rm -rf {shlex.quote(cls.mysql_data_dir)}/* {shlex.quote(cls.mysql_data_dir)}/.* 2>/dev/null || true"
             result = subprocess.run(
                 ["sudo", "-u", cls.username, "bash", "-c", command],
