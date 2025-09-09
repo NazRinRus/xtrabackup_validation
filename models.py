@@ -180,19 +180,11 @@ class MySQL_cluster:
         """
         Метод получения списка БД из активного кластера
         """
-        databases = []
-        exclude_dirs = ['mysql', 'performance_schema', 'sys']
-        show_databases_cmd = subprocess.run(
-                ["sudo", "bash", "-c", "mysql",
-                 "--execute='SHOW DATABASES;'",
-                 "--skip-column-names",
-                 "--batch",
-                 "--silent"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-        return show_databases_cmd.stdout
+        exclude_db = ['mysql', 'performance_schema', 'sys', 'information_schema']
+        command = "mysql --execute='SHOW DATABASES;' --skip-column-names --batch --silent"
+        show_databases_cmd = subprocess.run(["sudo", "bash", "-c", command], capture_output=True, text=True, timeout=2)
+        databases = [db for db in show_databases_cmd.stdout.strip().split('\n') if db not in exclude_db]
+        return databases.sort()
 
     def __new__(cls, *args, **kwargs):
         cls.dir_validate(cls.backupdir + '/' + args[0])
@@ -242,9 +234,9 @@ class MySQL_cluster:
         path_backup = self.backupdir + '/' + self.cluster_name + '/latest'
         self.dir_validate(path_backup)
         directories = []
-        exclude_dirs = ['mysql', 'performance_schema', 'sys']
+        exclude_dirs = ['mysql', 'performance_schema', 'sys', 'information_schema']
         with os.scandir(path_backup) as entries:
             for entry in entries:
                 if entry.is_dir() and entry.name not in exclude_dirs:
                     directories.append(entry.name)
-        return directories
+        return directories.sort()

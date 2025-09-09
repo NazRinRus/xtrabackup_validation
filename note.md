@@ -70,3 +70,11 @@ except ValueError as e:
 2. Есть ли смысл в текстовом конфигурационном файле, удобнее держать переменные в файле `.py` и импортировать.
 3. 
 - def status_cluster(): возвращает True если активен сервис и False если не активен
+
+
+
+command = "mysql --execute='SHOW DATABASES;' --skip-column-names --batch --silent"
+show_databases_cmd = subprocess.run(["sudo", "bash", "-c", command], capture_output=True, text=True, timeout=2)
+show_databases_cmd.stdout
+OUT:
+'information_schema\ncrm_prod\nmysql\nperformance_schema\npxc_sst_DJtA\npxc_sst_Zxbd\npxc_sst_dM67\npxc_sst_m5I4\npxc_sst_taA6\nsys\n'
