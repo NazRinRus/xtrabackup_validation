@@ -163,6 +163,10 @@ class MySQL_cluster:
                 grastate.write(content)
         return True
     
+    def __new__(cls, *args, **kwargs):
+        cls.dir_validate(cls.backupdir + '/' + args[0])
+        return super().__new__(cls)
+
     def __init__(self, cluster_name):
         self.cluster_name = cluster_name
     
@@ -199,3 +203,17 @@ class MySQL_cluster:
         if result.returncode != 0:
             raise subprocess.CalledProcessError(f"Owner change error: {result.stderr}")
         return True
+
+    def get_databases(self):
+        """
+        Метод получения списка БД, полученный из директорий БД в бэкапе
+        """
+        path_backup = self.backupdir + '/' + self.cluster_name + '/latest'
+        self.dir_validate(path_backup)
+        directories = []
+        exclude_dirs = ['mysql', 'performance_schema', 'sys']
+        with os.scandir(path_backup) as entries:
+            for entry in entries:
+                if entry.is_dir() and entry.name not in exclude_dirs:
+                    directories.append(entry.name)
+        return directories
