@@ -109,8 +109,7 @@ class MySQL_cluster:
             text=True,
             timeout=60
         )
-        time.sleep(2)
-        if result_cmd.returncode != 0:
+        if result_cmd.returncode not in [0, 3]:
             raise subprocess.CalledProcessError(f"Error getting service status: {result_cmd.stderr}")
         else:
             return True if result_cmd.stdout.strip() == 'active' else False
@@ -176,6 +175,25 @@ class MySQL_cluster:
                 grastate.write(content)
         return True
     
+    @classmethod
+    def get_active_databases(cls):
+        """
+        Метод получения списка БД из активного кластера
+        """
+        databases = []
+        exclude_dirs = ['mysql', 'performance_schema', 'sys']
+        show_databases_cmd = subprocess.run(
+                ["sudo", "bash", "-c", "mysql",
+                 "--execute='SHOW DATABASES;'",
+                 "--skip-column-names",
+                 "--batch",
+                 "--silent"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+        return show_databases_cmd.stdout
+
     def __new__(cls, *args, **kwargs):
         cls.dir_validate(cls.backupdir + '/' + args[0])
         return super().__new__(cls)
@@ -217,9 +235,9 @@ class MySQL_cluster:
             raise subprocess.CalledProcessError(f"Owner change error: {result.stderr}")
         return True
 
-    def get_databases(self):
+    def get_databases_in_backup(self):
         """
-        Метод получения списка БД, полученный из директорий БД в бэкапе
+        Метод получения списка БД из директорий БД в бэкапе
         """
         path_backup = self.backupdir + '/' + self.cluster_name + '/latest'
         self.dir_validate(path_backup)
