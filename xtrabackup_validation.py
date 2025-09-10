@@ -3,6 +3,9 @@ import subprocess
 from models import MySQL_cluster
 from mysqlconf import CLUSTER_NAMES
 
+logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w",
+                    format="%(asctime)s %(levelname)s %(message)s")
+
 for cluster_name in CLUSTER_NAMES:
 
     cluster_instance = MySQL_cluster(cluster_name)    
