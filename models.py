@@ -51,7 +51,7 @@ class MySQL_cluster:
             text=True,
             timeout=60
         )
-        if result_cmd.returncode not in [0, 3]:
+        if result_cmd.returncode not in [0, 3, 4]:
             raise subprocess.CalledProcessError(f"Error getting service status: {result_cmd.stderr}")
         else:
             return True if result_cmd.stdout.strip() == 'active' else False
@@ -184,7 +184,7 @@ class MySQL_cluster:
         return sorted(directories)
 
     def start_dump(self, dump_cmd):
-        """ Метод создания дампа"""
+        """ Метод запуска процесса снятия дампа"""
         dump_result = subprocess.run(["sudo", "bash", "-c", dump_cmd],
             stdout=subprocess.DEVNULL,
             timeout=300  # 5 минут таймаут на таблицу
@@ -204,7 +204,7 @@ class MySQL_cluster:
             raise Exception(f"The active cluster is different from the instance cluster - {self.cluster_name}")
         else:
             for db in active_cluster:
-                dump_cmd = f"mysqldump --single-transaction --events --triggers {db} > /dev/null"
+                dump_cmd = f"mysqldump --single-transaction --no-data --routines --events --triggers {db} > /dev/null"
                 self.start_dump(dump_cmd)
         return True
 
