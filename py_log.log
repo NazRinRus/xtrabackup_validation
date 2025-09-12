@@ -1,0 +1,10 @@
+2025-09-12 11:34:28,719 INFO Working with the 'crm_prod' cluster'
+2025-09-12 11:34:28,741 INFO MySQL service is inactive
+2025-09-12 11:34:28,751 INFO Successfully cleared '/data/mysql'
+2025-09-12 11:34:35,121 INFO Copying backup files 'crm_prod' to data directory '/data/mysql' completed successfully 
+2025-09-12 11:34:59,659 ERROR Command '['sudo', '-u', 'mysql', 'bash', '-c', 'xtrabackup --parallel=2 --decompress --remove-original --target-dir=/data/mysql', '>', '/dev/null']' returned non-zero exit status 1.
+2025-09-12 11:34:59,659 INFO Working with the 'any_test_db' cluster'
+2025-09-12 11:34:59,687 INFO MySQL service is inactive
+2025-09-12 11:34:59,978 INFO Successfully cleared '/data/mysql'
+2025-09-12 11:35:05,711 INFO Copying backup files 'any_test_db' to data directory '/data/mysql' completed successfully 
+2025-09-12 11:35:30,358 ERROR Command '['sudo', '-u', 'mysql', 'bash', '-c', 'xtrabackup --parallel=2 --decompress --remove-original --target-dir=/data/mysql', '>', '/dev/null']' returned non-zero exit status 1.
