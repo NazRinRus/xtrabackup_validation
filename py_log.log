@@ -1,10 +1,19 @@
-2025-09-12 11:34:28,719 INFO Working with the 'crm_prod' cluster'
-2025-09-12 11:34:28,741 INFO MySQL service is inactive
-2025-09-12 11:34:28,751 INFO Successfully cleared '/data/mysql'
-2025-09-12 11:34:35,121 INFO Copying backup files 'crm_prod' to data directory '/data/mysql' completed successfully 
-2025-09-12 11:34:59,659 ERROR Command '['sudo', '-u', 'mysql', 'bash', '-c', 'xtrabackup --parallel=2 --decompress --remove-original --target-dir=/data/mysql', '>', '/dev/null']' returned non-zero exit status 1.
-2025-09-12 11:34:59,659 INFO Working with the 'any_test_db' cluster'
-2025-09-12 11:34:59,687 INFO MySQL service is inactive
-2025-09-12 11:34:59,978 INFO Successfully cleared '/data/mysql'
-2025-09-12 11:35:05,711 INFO Copying backup files 'any_test_db' to data directory '/data/mysql' completed successfully 
-2025-09-12 11:35:30,358 ERROR Command '['sudo', '-u', 'mysql', 'bash', '-c', 'xtrabackup --parallel=2 --decompress --remove-original --target-dir=/data/mysql', '>', '/dev/null']' returned non-zero exit status 1.
+2025-09-12 12:51:47,804 INFO Working with the 'crm_prod' cluster'
+2025-09-12 12:51:47,816 INFO MySQL service is active
+2025-09-12 12:51:51,751 INFO MySQL service stoped. Cluster 'crm_prod'
+2025-09-12 12:51:52,074 INFO Successfully cleared '/data/mysql'
+2025-09-12 12:51:58,562 INFO Copying backup files 'crm_prod' to data directory '/data/mysql' completed successfully 
+2025-09-12 12:52:36,762 INFO Cluster 'crm_prod' recovery completed successfully
+2025-09-12 12:52:40,785 INFO Service 'mysql' - cluster 'crm_prod' start successful
+2025-09-12 12:52:47,482 INFO Taking dump from cluster 'crm_prod' completed successfully
+2025-09-12 12:52:50,422 INFO Service 'mysql' - cluster 'crm_prod' stop successful
+2025-09-12 12:52:50,754 INFO Successfully cleared '/data/mysql'
+2025-09-12 12:52:50,754 INFO Working with the 'any_test_db' cluster'
+2025-09-12 12:52:50,766 INFO MySQL service is inactive
+2025-09-12 12:52:50,776 INFO Successfully cleared '/data/mysql'
+2025-09-12 12:52:56,704 INFO Copying backup files 'any_test_db' to data directory '/data/mysql' completed successfully 
+2025-09-12 12:53:34,467 INFO Cluster 'any_test_db' recovery completed successfully
+2025-09-12 12:53:38,126 INFO Service 'mysql' - cluster 'any_test_db' start successful
+2025-09-12 12:53:42,984 INFO Taking dump from cluster 'any_test_db' completed successfully
+2025-09-12 12:53:46,723 INFO Service 'mysql' - cluster 'any_test_db' stop successful
+2025-09-12 12:53:47,019 INFO Successfully cleared '/data/mysql'
