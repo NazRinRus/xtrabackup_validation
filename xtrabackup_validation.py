@@ -1,6 +1,7 @@
 import logging
 import subprocess
-from models import MySQL_cluster
+import time
+from models import MySQL_cluster, format_time
 from mysqlconf import CLUSTER_NAMES
 
 logging.basicConfig(level=logging.INFO, filename="x_validation.log",filemode="w",
@@ -8,12 +9,9 @@ logging.basicConfig(level=logging.INFO, filename="x_validation.log",filemode="w"
 
 logging.info(f"Running validation script. List of clusters: {', '.join(CLUSTER_NAMES)}")
 
-val_durations = {}
-exit_codes = {}
-
 for cluster_name in CLUSTER_NAMES:
     
-    # val_start_time = 
+    val_start_time = time.time()
     exit_code = 0
     # Если кластер активен, то выключаем его
     cluster_instance = MySQL_cluster(cluster_name)    
@@ -46,7 +44,10 @@ for cluster_name in CLUSTER_NAMES:
 
     # Восстановление данных
     try:
+        start_time = time.time()
         if cluster_instance.xtrabackup_restore():
+            end_time = time.time()
+            restor_duration = end_time - start_time
             logging.info(f"Cluster '{cluster_name}' recovery completed successfully")
     except subprocess.CalledProcessError as e:
         exit_code = 1
@@ -84,8 +85,15 @@ for cluster_name in CLUSTER_NAMES:
         exit_code = 1
         logging.error(e)
 
-    # val_stop_time = 
-    val_durations[cluster_name] = str(val_stop_time - val_start_time)
-    exit_codes[cluster_name] = exit_code
+    # Блок формирования отчета о текущей итерации
+    val_stop_time = time.time()
+    val_duration = val_stop_time - val_start_time
+    cluster_instance.val_durations[cluster_name] = format_time(val_duration)
+    cluster_instance.exit_codes[cluster_name] = exit_code
+    cluster_instance.restor_durations[cluster_name] = format_time(restor_duration)
+    cluster_instance.sizes[cluster_name] = cluster_instance.get_size_cluster()
 
 logging.info(f"Script execution completed")
+logging.info(f"val_durations: {MySQL_cluster.val_durations}")
+logging.info(f"exit_codes: {MySQL_cluster.exit_codes}")
+

@@ -2,7 +2,15 @@ import subprocess
 import shlex
 import os
 import time
-from mysqlconf import BACKUP_DIR, MYSQL_DATA_DIR
+from mysqlconf import BACKUP_DIR, MYSQL_DATA_DIR, CLUSTER_NAMES
+
+# Блок отдельных функций
+def format_time(seconds):
+    """Преобразует секунды в формат чч:мм:сс"""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    seconds = int(seconds % 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 # Классы описывающие калстера
 class MySQL_cluster:
@@ -12,6 +20,12 @@ class MySQL_cluster:
     mysql_data_dir = MYSQL_DATA_DIR
     backupdir = BACKUP_DIR
     username = 'mysql'
+
+    val_durations = {}
+    exit_codes = {}
+    restor_durations = {}
+    sizes = {}
+    discovery = [{'{#STANZA}': cl_name} for cl_name in CLUSTER_NAMES]
 
     @classmethod
     def get_nproc(cls):
@@ -208,4 +222,12 @@ class MySQL_cluster:
                 self.start_dump(dump_cmd)
         return True
 
-
+    def get_size_cluster(self):
+        """
+        Метод получения размера экземпляра бэкапа
+        """
+        size_cmd = f"du -sh {self.backupdir}/{self.cluster_name}/latest"
+        size_result = subprocess.run(["sudo", "bash", "-c", size_cmd], capture_output=True, text=True, check=True)
+        if size_result.returncode != 0:
+            raise subprocess.CalledProcessError(f"Error getting directory size: {size_result.stderr}")
+        return size_result.stdout.split()[0].strip()
