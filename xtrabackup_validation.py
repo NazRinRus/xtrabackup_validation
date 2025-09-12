@@ -3,7 +3,7 @@ import subprocess
 from models import MySQL_cluster
 from mysqlconf import CLUSTER_NAMES
 
-logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w",
+logging.basicConfig(level=logging.INFO, filename="x_validation.log",filemode="w",
                     format="%(asctime)s %(levelname)s %(message)s")
 
 logging.info(f"Running validation script. List of clusters: {', '.join(CLUSTER_NAMES)}")
