@@ -1,22 +1,25 @@
-2025-09-12 16:03:16,056 INFO Running validation script. List of clusters: crm_prod, any_test_db
-2025-09-12 16:03:16,056 INFO Working with the 'crm_prod' cluster'
-2025-09-12 16:03:16,068 INFO MySQL service is inactive
-2025-09-12 16:03:16,077 INFO Successfully cleared '/data/mysql'
-2025-09-12 16:03:22,388 INFO Copying backup files 'crm_prod' to data directory '/data/mysql' completed successfully 
-2025-09-12 16:04:01,251 INFO Cluster 'crm_prod' recovery completed successfully
-2025-09-12 16:04:04,511 INFO Service 'mysql' - cluster 'crm_prod' start successful
-2025-09-12 16:04:10,563 INFO Taking dump from cluster 'crm_prod' completed successfully
-2025-09-12 16:04:15,107 INFO Service 'mysql' - cluster 'crm_prod' stop successful
-2025-09-12 16:04:15,376 INFO Successfully cleared '/data/mysql'
-2025-09-12 16:04:15,389 INFO Working with the 'any_test_db' cluster'
-2025-09-12 16:04:15,418 INFO MySQL service is inactive
-2025-09-12 16:04:15,450 INFO Successfully cleared '/data/mysql'
-2025-09-12 16:04:21,413 INFO Copying backup files 'any_test_db' to data directory '/data/mysql' completed successfully 
-2025-09-12 16:04:59,870 INFO Cluster 'any_test_db' recovery completed successfully
-2025-09-12 16:05:03,538 INFO Service 'mysql' - cluster 'any_test_db' start successful
-2025-09-12 16:05:07,970 INFO Taking dump from cluster 'any_test_db' completed successfully
-2025-09-12 16:05:11,198 INFO Service 'mysql' - cluster 'any_test_db' stop successful
-2025-09-12 16:05:11,512 INFO Successfully cleared '/data/mysql'
-2025-09-12 16:05:11,526 INFO Script execution completed
-2025-09-12 16:05:11,526 INFO val_durations: {'crm_prod': '00:00:59', 'any_test_db': '00:00:56'}
-2025-09-12 16:05:11,526 INFO exit_codes: {'crm_prod': 0, 'any_test_db': 0}
+2025-09-14 09:33:30,585 INFO Running validation script. List of clusters: crm_prod, any_test_db
+2025-09-14 09:33:30,585 INFO Working with the 'crm_prod' cluster'
+2025-09-14 09:33:30,593 INFO MySQL service is inactive
+2025-09-14 09:33:30,604 INFO Successfully cleared '/data/mysql'
+2025-09-14 09:33:37,388 INFO Copying backup files 'crm_prod' to data directory '/data/mysql' completed successfully 
+2025-09-14 09:34:15,704 INFO Cluster 'crm_prod' recovery completed successfully
+2025-09-14 09:34:20,389 INFO Service 'mysql' - cluster 'crm_prod' start successful
+2025-09-14 09:34:24,787 INFO Taking dump from cluster 'crm_prod' completed successfully
+2025-09-14 09:34:28,021 INFO Service 'mysql' - cluster 'crm_prod' stop successful
+2025-09-14 09:34:28,328 INFO Successfully cleared '/data/mysql'
+2025-09-14 09:34:28,362 INFO Working with the 'any_test_db' cluster'
+2025-09-14 09:34:28,384 INFO MySQL service is inactive
+2025-09-14 09:34:28,456 INFO Successfully cleared '/data/mysql'
+2025-09-14 09:34:34,398 INFO Copying backup files 'any_test_db' to data directory '/data/mysql' completed successfully 
+2025-09-14 09:35:38,902 INFO Cluster 'any_test_db' recovery completed successfully
+2025-09-14 09:35:42,258 INFO Service 'mysql' - cluster 'any_test_db' start successful
+2025-09-14 09:35:46,994 INFO Taking dump from cluster 'any_test_db' completed successfully
+2025-09-14 09:35:50,814 INFO Service 'mysql' - cluster 'any_test_db' stop successful
+2025-09-14 09:35:51,114 INFO Successfully cleared '/data/mysql'
+2025-09-14 09:35:51,154 INFO Script execution completed
+2025-09-14 09:35:51,154 INFO val_durations: {'crm_prod': '00:00:57', 'any_test_db': '00:01:22'}
+2025-09-14 09:35:51,154 INFO exit_codes: {'crm_prod': 0, 'any_test_db': 0}
+2025-09-14 09:35:51,154 INFO restor_durations: {'crm_prod': '00:00:38', 'any_test_db': '00:01:04'}
+2025-09-14 09:35:51,154 INFO sizes: {'crm_prod': '2.4G', 'any_test_db': '2.4G'}
+2025-09-14 09:35:51,154 INFO discovery: [{'{#STANZA}': 'crm_prod'}, {'{#STANZA}': 'any_test_db'}]

@@ -2,7 +2,8 @@ import subprocess
 import shlex
 import os
 import time
-from mysqlconf import BACKUP_DIR, MYSQL_DATA_DIR, CLUSTER_NAMES
+import json
+from mysqlconf import BACKUP_DIR, MYSQL_DATA_DIR, CLUSTER_NAMES, STATS_DIR
 
 # Блок отдельных функций
 def format_time(seconds):
@@ -19,6 +20,7 @@ class MySQL_cluster:
     """
     mysql_data_dir = MYSQL_DATA_DIR
     backupdir = BACKUP_DIR
+    stats_dir = STATS_DIR
     username = 'mysql'
 
     val_durations = {}
@@ -26,6 +28,26 @@ class MySQL_cluster:
     restor_durations = {}
     sizes = {}
     discovery = [{'{#STANZA}': cl_name} for cl_name in CLUSTER_NAMES]
+
+    @classmethod
+    def output_stats(cls):
+        """ Метод записи статистики в файл """
+        if cls.dir_validate(cls.stats_dir):
+            file_path = cls.stats_dir + '/validation_info'
+            content = (
+                        "EXIT_CODES: " + "; ".join(f"{key}:{value}" for key, value in cls.exit_codes.items()) + "\n"
+                        "RESTORE_DURATIONS: " + "; ".join(f"{key}:{value}" for key, value in cls.restor_durations.items()) + "\n"
+                        "SIZES: " + "; ".join(f"{key}:{value}" for key, value in cls.sizes.items()) + "\n"
+                        "VAL_DURATIONS: " + "; ".join(f"{key}:{value}" for key, value in cls.val_durations.items()) + "\n"
+                    )
+            with open(file_path, 'w') as validation_info:
+                validation_info.write(content)
+
+            file_path = cls.stats_dir + '/stanza_discovery'
+            with open(file_path, 'w', encoding='utf-8') as stanza_discovery:
+                json.dump(cls.discovery, stanza_discovery, indent=2, ensure_ascii=False)
+
+        return True
 
     @classmethod
     def get_nproc(cls):

@@ -1,6 +1,7 @@
 
 MYSQL_DATA_DIR = '/data/mysql'
 BACKUP_DIR = '/test_backup'
+STATS_DIR = '/var/log/backup_validation'
 CLUSTER_NAMES = ['crm_prod', 'any_test_db']
 
 # Конфигурационные настройки MySQL в скрипте валидации не используются, это задел на будущее
@@ -12,4 +13,4 @@ MYSQL_CONFIG = {
 }
 
 if __name__ == "__main__":
-    print('xtrabackup_validation.conf')
+    print('This is a configuration file')

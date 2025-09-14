@@ -93,7 +93,13 @@ for cluster_name in CLUSTER_NAMES:
     cluster_instance.restor_durations[cluster_name] = format_time(restor_duration)
     cluster_instance.sizes[cluster_name] = cluster_instance.get_size_cluster()
 
+# Формирование файла отчета по всем итерациям (по всем бэкапам)
+try:
+    if MySQL_cluster.output_stats():
+        logging.info(f"Report and monitoring files have been generated")
+except Exception as e:
+    logging.error(e)
+
 logging.info(f"Script execution completed")
-logging.info(f"val_durations: {MySQL_cluster.val_durations}")
-logging.info(f"exit_codes: {MySQL_cluster.exit_codes}")
+
 
