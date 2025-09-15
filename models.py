@@ -33,7 +33,7 @@ class MySQL_cluster:
     def output_stats(cls):
         """ Метод записи статистики в файл """
         if cls.dir_validate(cls.stats_dir):
-            file_path = cls.stats_dir + '/validation_info'
+            file_path = os.path.join(cls.stats_dir, 'validation_info')
             content = (
                         "EXIT_CODES: " + "; ".join(f"{key}:{value}" for key, value in cls.exit_codes.items()) + "\n"
                         "RESTORE_DURATIONS: " + "; ".join(f"{key}:{value}" for key, value in cls.restor_durations.items()) + "\n"
@@ -43,7 +43,7 @@ class MySQL_cluster:
             with open(file_path, 'w') as validation_info:
                 validation_info.write(content)
 
-            file_path = cls.stats_dir + '/stanza_discovery'
+            file_path = os.path.join(cls.stats_dir, 'stanza_discovery')
             with open(file_path, 'w', encoding='utf-8') as stanza_discovery:
                 json.dump(cls.discovery, stanza_discovery, indent=2, ensure_ascii=False)
 
@@ -141,13 +141,13 @@ class MySQL_cluster:
     @classmethod
     def extract_uuid_smth(cls):
         """ Метод извлечения значений uuid, smth из файла xtrabackup_galera_info. """
-        file_path = cls.mysql_data_dir + '/xtrabackup_galera_info'
+        file_path = os.path.join(cls.mysql_data_dir, 'xtrabackup_galera_info')
         if cls.file_validate(file_path):
             with open(file_path, 'r') as xtrabackup_galera_info:
                 content = xtrabackup_galera_info.read().strip()
             uuid = content.split(':')[0]
             smth = content.split(':')[-1]
-            file_path = cls.mysql_data_dir + '/grastate.dat'
+            file_path = os.path.join(cls.mysql_data_dir, 'grastate.dat')
             content = f"# GALERA saved state\nversion: 2.1\nuuid: {uuid}\nseqno: -1\nsafe_to_bootstrap: 1"
             with open(file_path, 'w') as grastate:
                 grastate.write(content)
@@ -165,7 +165,7 @@ class MySQL_cluster:
         return sorted(databases)
 
     def __new__(cls, *args, **kwargs):
-        cls.dir_validate(cls.backupdir + '/' + args[0])
+        cls.dir_validate(os.path.join(cls.backupdir, args[0]))
         return super().__new__(cls)
 
     def __init__(self, cluster_name):
@@ -209,7 +209,7 @@ class MySQL_cluster:
         """
         Метод получения списка БД из директорий БД в бэкапе
         """
-        path_backup = self.backupdir + '/' + self.cluster_name + '/latest'
+        path_backup = os.path.join(self.backupdir, self.cluster_name, 'latest')
         self.dir_validate(path_backup)
         directories = []
         exclude_dirs = ['mysql', 'performance_schema', 'sys', 'information_schema']
@@ -248,7 +248,7 @@ class MySQL_cluster:
         """
         Метод получения размера экземпляра бэкапа
         """
-        size_cmd = f"du -sh {self.backupdir}/{self.cluster_name}/latest"
+        size_cmd = f"du -sh {os.path.join(self.backupdir, self.cluster_name, 'latest')}"
         size_result = subprocess.run(["sudo", "bash", "-c", size_cmd], capture_output=True, text=True, check=True)
         if size_result.returncode != 0:
             raise subprocess.CalledProcessError(f"Error getting directory size: {size_result.stderr}")
