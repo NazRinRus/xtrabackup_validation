@@ -3,7 +3,7 @@ import shlex
 import os
 import time
 import json
-from mysqlconf import BACKUP_DIR, MYSQL_DATA_DIR, CLUSTER_NAMES, STATS_DIR
+from mysqlconf import BACKUP_DIR, MYSQL_DATA_DIR, CLUSTER_NAMES, STATS_DIR, TRUE_DUMP_DIR
 
 # Блок отдельных функций
 def format_time(seconds):
@@ -21,6 +21,7 @@ class MySQL_cluster:
     mysql_data_dir = MYSQL_DATA_DIR
     backupdir = BACKUP_DIR
     stats_dir = STATS_DIR
+    true_dump_dir = TRUE_DUMP_DIR
     username = 'mysql'
 
     val_durations = {}
@@ -174,6 +175,8 @@ class MySQL_cluster:
         GROUP BY TABLE_SCHEMA ORDER BY TABLE_SCHEMA;"
         command = f'mysql --execute="{sql}" --skip-column-names --batch --silent'
         show_tables_cmd = subprocess.run(["sudo", "bash", "-c", command], capture_output=True, text=True, timeout=2)
+        if show_tables_cmd.returncode != 0:
+            raise subprocess.CalledProcessError(f"Failed to retrieve data for tables: {result.stderr}")
         dbs_tbls = {db.strip().split('\t', 1)[0]:db.strip().split('\t', 1)[1].strip('[]"').split('", "') for db in show_tables_cmd.stdout.strip().split('\n')}
         return dbs_tbls
 
@@ -232,29 +235,33 @@ class MySQL_cluster:
                     directories.append(entry.name)
         return sorted(directories)
 
-    def start_dump(self, dump_cmd):
-        """ Метод запуска процесса снятия дампа"""
+    def start_dump(self, param_list=None, dump_filename=None):
+        """
+        Метод запуска процесса снятия дампа. Если список параметров не передан, то снимается только схема данных без самих данных. 
+        Имя конкретной базы данных следует передавать как элемент списка параметра - [..., 'db_name'], таблицы - 
+        параметром [..., '--tables table1 table2 table3'].
+        Если передана переменная dump_filename, например dump_filename='schema_only_crm_prod.dump', то дамп запишется в этот файл 
+        """
+        if param_list is None:
+            param_list = [
+                "--all-databases",
+                "--no-data",
+                "--routines",
+                "--events",
+                "--triggers",
+                "--single-transaction",
+                "--set-gtid-purged=OFF",
+                "--skip-add-drop-table"
+            ]
+        if dump_filename is not None:
+            param_list.append(f"--result-file='{os.path.join(self.true_dump_dir, dump_filename)}'") 
+        dump_cmd = "mysqldump " + " ".join(param_list) 
         dump_result = subprocess.run(["sudo", "bash", "-c", dump_cmd],
             stdout=subprocess.DEVNULL,
-            timeout=300  # 5 минут таймаут на таблицу
+            timeout=300  # 5 минут таймаут
         )
         if dump_result.returncode != 0:
             raise subprocess.CalledProcessError(f"Dump error: {dump_result.stderr}")
-        return True
-
-    def dump_validation(self):
-        """ 
-        Метод снятия дампа, если активный кластер развернут из бэкапа текущего экземпляра класса.
-        Соответствие кластера проверяется сравнением названий баз данных в активном класстере с кластером экземпляра  
-        """
-        active_cluster = self.get_active_databases()
-        backup_cluster = self.get_databases_in_backup()
-        if active_cluster != backup_cluster:
-            raise Exception(f"The active cluster is different from the instance cluster - {self.cluster_name}")
-        else:
-            for db in active_cluster:
-                dump_cmd = f"mysqldump --single-transaction --no-data --routines --events --triggers {db} > /dev/null"
-                self.start_dump(dump_cmd)
         return True
 
     def get_size_cluster(self):

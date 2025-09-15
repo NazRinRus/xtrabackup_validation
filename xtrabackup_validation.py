@@ -63,9 +63,13 @@ for cluster_name in CLUSTER_NAMES:
 
     # Снятие дампа
     try:
-        if cluster_instance.dump_validation():
-            logging.info(f"Taking dump from cluster '{cluster_name}' completed successfully")
-    except Exception as e:
+        dbs_tables = cluster_instance.get_tables_in_dbs()
+        # снятие только дампа схемы
+        if cluster_instance.start_dump(): # для тестирования, добавить параметр dump_filename='schema_only_crm_prod.dump'
+            logging.info(f"Taking dump schema from cluster '{cluster_name}' completed successfully")
+        # циклический вызов метода снятия дампа с таблиц
+        
+    except subprocess.CalledProcessError as e:
         exit_code = 1
         logging.error(e)
 
