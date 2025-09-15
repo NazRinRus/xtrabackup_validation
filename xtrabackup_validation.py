@@ -64,11 +64,24 @@ for cluster_name in CLUSTER_NAMES:
     # Снятие дампа
     try:
         dbs_tables = cluster_instance.get_tables_in_dbs()
+        # базовые параметры для снятия дампа только данных одной таблицы
+        parametrs = [
+                "--no-create-info",
+                "--single-transaction",
+                "--set-gtid-purged=OFF"
+            ]
         # снятие только дампа схемы
         if cluster_instance.start_dump(): # для тестирования, добавить параметр dump_filename='schema_only_crm_prod.dump'
             logging.info(f"Taking dump schema from cluster '{cluster_name}' completed successfully")
         # циклический вызов метода снятия дампа с таблиц
-        
+        for db, tables in dbs_tables.items():
+            parametrs.append(db)
+            for table in tables:
+                parametrs.append(f"--tables {table}")
+                if cluster_instance.start_dump(param_list=parametrs):
+                    logging.info(f"Taking dump table - '{table}' DB - '{db}' from cluster '{cluster_name}' completed successfully")
+                parametrs.pop() # удаляю параметр с таблицей
+            parametrs.pop() # удаляю параметр с базой
     except subprocess.CalledProcessError as e:
         exit_code = 1
         logging.error(e)
