@@ -164,6 +164,19 @@ class MySQL_cluster:
         databases = [db for db in show_databases_cmd.stdout.strip().split('\n') if db not in exclude_db]
         return sorted(databases)
 
+    @classmethod
+    def get_tables_in_dbs(cls):
+        """
+        Метод получения списка таблиц из каждой БД активного кластера, в виде: {'database: [table_list]'}
+        """
+        sql = "SELECT TABLE_SCHEMA, JSON_ARRAYAGG(TABLE_NAME) FROM information_schema.TABLES \
+        WHERE TABLE_SCHEMA NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys') \
+        GROUP BY TABLE_SCHEMA ORDER BY TABLE_SCHEMA;"
+        command = f'mysql --execute="{sql}" --skip-column-names --batch --silent'
+        show_tables_cmd = subprocess.run(["sudo", "bash", "-c", command], capture_output=True, text=True, timeout=2)
+        dbs_tbls = {db.strip().split('\t', 1)[0]:db.strip().split('\t', 1)[1].strip('[]"').split('", "') for db in show_tables_cmd.stdout.strip().split('\n')}
+        return dbs_tbls
+
     def __new__(cls, *args, **kwargs):
         cls.dir_validate(os.path.join(cls.backupdir, args[0]))
         return super().__new__(cls)
