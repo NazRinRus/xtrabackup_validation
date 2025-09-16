@@ -81,7 +81,7 @@ class MySQL_cluster:
     
     @staticmethod
     def status_cluster():
-        """ Метод остановки кластера """
+        """ Метод проверки статуса кластера """
         result_cmd = subprocess.run(
             ["sudo", "systemctl", "is-active", "mysql"],
             capture_output=True,
