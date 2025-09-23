@@ -13,6 +13,22 @@ def format_time(seconds):
     seconds = int(seconds % 60)
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
+def archive_file(source_file):
+    """ Процедура архивирования файлов """
+    source_file_path = os.path.join(TRUE_DUMP_DIR, source_file)
+    #source_target_path = os.path.join(TRUE_DUMP_DIR, source_file)
+    command = f"tar -czf {TRUE_DUMP_DIR}/{source_file}.tar.gz {source_file_path} --remove-files"
+    result = subprocess.run(
+        ["sudo", "bash", "-c", command],
+        capture_output=True,
+        text=True,
+        timeout=300
+    )
+    if result.returncode != 0:
+        raise subprocess.CalledProcessError(f"Error during archiving process: {result.stderr}")
+    else:
+        return True
+
 # Классы описывающие калстера
 class MySQL_cluster:
     """
