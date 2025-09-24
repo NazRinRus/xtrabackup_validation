@@ -77,13 +77,9 @@ for cluster_name in CLUSTER_NAMES:
             logging.info(f"Taking dump schema from cluster '{cluster_name}' completed successfully")
         # циклический вызов метода снятия дампа с таблиц
         for db, tables in dbs_tables.items():
-            parametrs.append(db)
             for table in tables:
-                parametrs.append(f"--tables {table}")
-                if cluster_instance.start_dump(param_list=parametrs):
+                if cluster_instance.start_dump(param_list=parametrs + [db, f"--tables {table}"], dump_filename=f"{cluster_name}_{db}_{table}.dump"):
                     logging.info(f"Taking dump table - '{table}' DB - '{db}' from cluster '{cluster_name}' completed successfully")
-                parametrs.pop() # удаляю параметр с таблицей
-            parametrs.pop() # удаляю параметр с базой
     except subprocess.CalledProcessError as e:
         exit_code = 1
         logging.error(e)
