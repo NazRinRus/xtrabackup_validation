@@ -77,7 +77,7 @@ class MySQL_cluster:
             )
         if nproc.returncode != 0:
             raise subprocess.CalledProcessError(f"Error executing command nproc: {nproc.stderr}")
-        return nproc.stdout.strip()
+        return int(nproc.stdout.strip())
 
     @classmethod
     def dir_validate(cls, path_dir):
