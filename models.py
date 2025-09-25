@@ -1,4 +1,4 @@
-import subprocess
+import subprocess, threading, queue
 import shlex
 import os
 import time
@@ -26,6 +26,16 @@ def archive_file(source_file):
     )
     if result.returncode != 0:
         raise subprocess.CalledProcessError(f"Error during archiving process: {result.stderr}")
+    else:
+        return True
+
+def start_dump(param_str): 
+    dump_result = subprocess.run(["sudo", "bash", "-c", param_str],
+        stdout=subprocess.DEVNULL,
+        timeout=300  # 5 минут таймаут
+    )
+    if dump_result.returncode != 0:
+        raise subprocess.CalledProcessError(f"Error dumping table")
     else:
         return True
 
@@ -290,3 +300,27 @@ class MySQL_cluster:
         if size_result.returncode != 0:
             raise subprocess.CalledProcessError(f"Error getting directory size: {size_result.stderr}")
         return size_result.stdout.split()[0].strip()
+
+
+class Worker(threading.Thread):
+    def __init__(self, queue, event_dict, destination, custom_parameters="",):
+        threading.Thread.__init__(self)
+        self.queue = queue
+        self.event_dict = event_dict
+        self.destination = destination
+        self.custom_parameters = custom_parameters
+    
+    def run(self):
+        while True:
+            try:
+                num, database, table = self.queue.get(True, 1)
+            except queue.Empty:
+                break
+            self.event_dict[num] = threading.Event()
+            self.event_dict[num].clear()
+            start_dump(param_str)
+            if num > 0:
+                while not self.event_dict[num-1].isSet():
+                    self.event_dict[num-1].wait()
+
+            self.event_dict[num].set()
