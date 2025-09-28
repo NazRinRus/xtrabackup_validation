@@ -93,72 +93,14 @@ if __name__ == "__main__":
 2025-09-24 16:27:27,354 INFO Процесс 2 запущен
 2025-09-24 16:27:27,355 INFO Процесс 3 запущен
 2025-09-24 16:27:27,356 INFO Процесс 4 запущен
-2025-09-24 16:28:22,946 INFO Время снятия дампа с архивированием: 00:01:00
+2025-09-24 16:28:22,946 INFO Время снятия дампа: 00:01:00
 ```
 С пуллом процессов дольше, но возможен дамп каждой таблицы отдельно:
 ```
-2025-09-24 19:08:30,438 INFO Время снятия дампа с архивированием: 00:01:13
+2025-09-24 19:08:30,438 INFO Время снятия дампа: 00:01:13
 ```
 так же требуется вынести метод снятия дампа из класса в отдельную функцию
-#### Тест снятия дампа в несколько потоков:
-
-Разбиение таблиц на задачи:
+#### Тест снятия дампа в несколько потоков (20 workers):
 ```
-nproc = 8
-workers = []
-tables = [i for i in range(5)]
-for i in range(len(tables)):
-    if len(workers) < ((i % nproc) + 1):
-        workers.append([tables[i]])
-    else:
-        workers[i % nproc].append(tables[i])
-
-```
-
-Еще вариант:
-```
-# Для задач с БД обычно 10-30 потоков
-optimal_workers = min(20, task_queue.qsize())  # Не более 20 потоков
-
-import threading
-import queue
-
-class DatabaseWorker(threading.Thread):
-    def __init__(self, queue, max_workers=15):
-        threading.Thread.__init__(self)
-        self.queue = queue
-        
-    def run(self):
-        while True:
-            try:
-                num, db, table = self.queue.get(True, 1)
-                
-                # ДЛИТЕЛЬНАЯ ОПЕРАЦИЯ С БД
-                self.backup_table(db, table)  # 10-60 минут на таблицу
-                
-                self.queue.task_done()
-            except queue.Empty:
-                break
-    
-    def backup_table(self, db, table):
-        # Резервное копирование одной таблицы
-        print(f"Начато резервное копирование {db}.{table}")
-        time.sleep(600)  # 10 минут на таблицу
-        print(f"Завершено резервное копирование {db}.{table}")
-
-# Использование
-task_queue = queue.Queue()
-for i in range(900):
-    task_queue.put((i, 'production_db', f'table_{i}'))
-
-# Оптимальное количество потоков для I/O операций
-workers = []
-for i in range(15):  # 15 потоков для операций с БД
-    worker = DatabaseWorker(task_queue)
-    worker.start()
-    workers.append(worker)
-
-# Ожидание завершения всех 900 задач
-task_queue.join()
-print("Все задачи завершены!")
+2025-09-28 19:31:52,546 INFO Время снятия дампа: 00:01:13
 ```

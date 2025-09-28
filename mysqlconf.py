@@ -3,6 +3,7 @@ MYSQL_DATA_DIR = '/data/mysql'
 BACKUP_DIR = '/test_backup'
 STATS_DIR = '/var/log/backup_validation'
 TRUE_DUMP_DIR = '/test_dump'
+TRUE_DUMP = False
 CLUSTER_NAMES = ['crm_prod', 'any_test_db']
 
 # Конфигурационные настройки MySQL в скрипте валидации не используются, это задел на будущее

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
+import threading
+import queue
 import os
 import multiprocessing
 import logging
 import subprocess
 import time
-from models import MySQL_cluster, format_time, archive_file, tasks_building, start_dump
-from mysqlconf import CLUSTER_NAMES, TRUE_DUMP_DIR
+from models import MySQL_cluster, format_time, Worker, tasks_building
+from mysqlconf import CLUSTER_NAMES, TRUE_DUMP_DIR, TRUE_DUMP
 
 logging.basicConfig(level=logging.INFO, filename="x_validation.log",filemode="w",
                     format="%(asctime)s %(levelname)s %(message)s")
@@ -29,14 +31,21 @@ try:
             "--compact", 
             "--complete-insert"
         ]
+    tasks = tasks_building(dbs_tables, parametrs)
+    task_queue = queue.Queue()
+    for task in tasks:
+        task_queue.put((task,))
+    optimal_workers = min(20, task_queue.qsize())  # Не более 20 потоков
     # снятие только дампа схемы
     if cluster_instance.start_dump(dump_filename=f"schema_only_{cluster_name}.dump"): # для тестирования, добавить параметр dump_filename='schema_only_crm_prod.dump'
         logging.info(f"Taking dump schema from cluster '{cluster_name}' completed successfully")
     # циклический вызов метода снятия дампа с таблиц
-    nproc = cluster_instance.get_nproc()
-    workers = tasks_building(dbs_tables, parametrs)
-    with multiprocessing.Pool(processes=nproc) as pool:
-        results_map = pool.map(start_dump, workers)
+    workers = [Worker(task_queue) for _ in range(optimal_workers)] # не более 20 потоков для операций с БД
+    for worker in workers:  
+        worker.start()
+
+    for worker in workers:
+        worker.join()
 
 except subprocess.CalledProcessError as e:
     exit_code = 1

@@ -3,7 +3,7 @@ import shlex
 import os
 import time
 import json
-from mysqlconf import BACKUP_DIR, MYSQL_DATA_DIR, CLUSTER_NAMES, STATS_DIR, TRUE_DUMP_DIR
+from mysqlconf import BACKUP_DIR, MYSQL_DATA_DIR, CLUSTER_NAMES, STATS_DIR, TRUE_DUMP_DIR, TRUE_DUMP
 
 # Блок отдельных функций
 def format_time(seconds):
@@ -29,8 +29,24 @@ def archive_file(source_file):
     else:
         return True
 
-def start_dump(param_str): 
-    dump_result = subprocess.run(["sudo", "bash", "-c", param_str],
+def tasks_building(dbs_tbls_dict, param_list):
+    """ 
+    Функция создает список кортежей вида: [(db_name, table_name, [parametrs]),(db_name, table_name, [parametrs]),] 
+    """
+    tasks = []
+    for db, tables in dbs_tbls_dict.items():
+        if len(tables) > 0:
+            for table in tables:
+                if TRUE_DUMP:
+                    file_name = f"{db}_{table}.dump"
+                    file_path = f"--result-file='{os.path.join(TRUE_DUMP_DIR, file_name)}'"
+                else:
+                    file_path = ''
+                tasks.append(f"mysqldump {' '.join(param_list)} {db} {table} {file_path}")
+    return tasks
+
+def start_dump(command_str): 
+    dump_result = subprocess.run(["sudo", "bash", "-c", command_str],
         stdout=subprocess.DEVNULL,
         timeout=300  # 5 минут таймаут
     )
@@ -303,24 +319,26 @@ class MySQL_cluster:
 
 
 class Worker(threading.Thread):
-    def __init__(self, queue, event_dict, destination, custom_parameters="",):
+    def __init__(self, queue):
         threading.Thread.__init__(self)
         self.queue = queue
-        self.event_dict = event_dict
-        self.destination = destination
-        self.custom_parameters = custom_parameters
-    
+        
     def run(self):
         while True:
             try:
-                num, database, table = self.queue.get(True, 1)
+                command_str = self.queue.get(True, 1) # результат в виде кортежа
+                self.start_dump(command_str[0]) # первый и единственный элемент кортежа
+                
+                self.queue.task_done()
             except queue.Empty:
                 break
-            self.event_dict[num] = threading.Event()
-            self.event_dict[num].clear()
-            start_dump(param_str)
-            if num > 0:
-                while not self.event_dict[num-1].isSet():
-                    self.event_dict[num-1].wait()
 
-            self.event_dict[num].set()
+    def start_dump(self, command_str): 
+        dump_result = subprocess.run(["sudo", "bash", "-c", command_str],
+            stdout=subprocess.DEVNULL,
+            timeout=300  # 5 минут таймаут
+        )
+        if dump_result.returncode != 0:
+            raise subprocess.CalledProcessError(f"Error dumping table")
+        else:
+            return True

@@ -63,23 +63,26 @@ for cluster_name in CLUSTER_NAMES:
         exit_code = 1
         logging.error(e)
 
-    # Снятие дампа
+    # Снятие дампа в нескольких паралельных процессах
     try:
         dbs_tables = cluster_instance.get_tables_in_dbs()
-        # базовые параметры для снятия дампа только данных одной таблицы
+        # базовые параметры для снятия дампа
         parametrs = [
-                "--no-create-info",
-                "--single-transaction",
-                "--set-gtid-purged=OFF"
+            "--no-create-info",
+            "--single-transaction",
+            "--set-gtid-purged=OFF",
+            "--skip-triggers",
+            "--compact", 
+            "--complete-insert"
             ]
         # снятие только дампа схемы
-        if cluster_instance.start_dump(): # для тестирования, добавить параметр dump_filename='schema_only_crm_prod.dump'
+        if cluster_instance.start_dump(dump_filename=f"schema_only_{cluster_name}.dump"): # для тестирования, добавить параметр dump_filename='schema_only_crm_prod.dump'
             logging.info(f"Taking dump schema from cluster '{cluster_name}' completed successfully")
         # циклический вызов метода снятия дампа с таблиц
-        for db, tables in dbs_tables.items():
-            for table in tables:
-                if cluster_instance.start_dump(param_list=parametrs + [db, f"--tables {table}"], dump_filename=f"{cluster_name}_{db}_{table}.dump"):
-                    logging.info(f"Taking dump table - '{table}' DB - '{db}' from cluster '{cluster_name}' completed successfully")
+        nproc = cluster_instance.get_nproc()
+        workers = tasks_building(dbs_tables, parametrs)
+        with multiprocessing.Pool(processes=nproc) as pool:
+            results_map = pool.map(start_dump, workers)
     except subprocess.CalledProcessError as e:
         exit_code = 1
         logging.error(e)
