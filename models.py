@@ -46,6 +46,9 @@ def tasks_building(dbs_tbls_dict, param_list):
     return tasks
 
 def start_dump(command_str): 
+    """
+    Функция запуска команды дампа. Принимает строку команды оболочки shell
+    """
     dump_result = subprocess.run(["sudo", "bash", "-c", command_str],
         stdout=subprocess.DEVNULL,
         timeout=300  # 5 минут таймаут
